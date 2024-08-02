@@ -10,9 +10,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController("/posts")
+@RestController
+@RequestMapping("/posts")
 public class PostController {
-
     private final Map<Long, Post> posts = new HashMap<>();
 
     @GetMapping
@@ -57,9 +57,8 @@ public class PostController {
     private long getNextId() {
         long currentMaxId = posts.keySet()
                 .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
+                .max(Long::compareTo)
+                .orElse(0L);
         return ++currentMaxId;
     }
 }

@@ -9,9 +9,7 @@ import java.time.Instant;
 @Builder
 public class Post {
     Long id;
-    String title;
-    String content;
-    String author;
-    Instant postDate;
+    Long authorId;
     String description;
+    Instant postDate;
 }
