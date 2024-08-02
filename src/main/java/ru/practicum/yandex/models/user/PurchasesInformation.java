@@ -10,7 +10,8 @@ import java.util.Date;
 @Builder
 public class PurchasesInformation {
     // дата последней покупки
-    private Date lastPurchase;
+    Date lastPurchase;
     // общее количество покупок
-    private long purchaseCounts = 0;
+    @Builder.Default
+    long purchaseCounts = 0;
 }

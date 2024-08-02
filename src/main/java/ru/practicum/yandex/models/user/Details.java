@@ -10,9 +10,6 @@ import java.util.Date;
 @Data
 @Builder
 public class Details {
-    // электронная почта
-    @NonNull
-    private String email;
     // имя
     @NonNull
     private String firstName;
