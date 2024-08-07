@@ -12,24 +12,24 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/posts")
+@RequiredArgsConstructor
 public class PostController {
     PostService postService;
 
     @GetMapping
-    public Collection<Post> findAll() {
+    public Collection<Post> getAllPosts() {
         return postService.findAll();
     }
 
     @PostMapping
-    public Post create(@RequestBody Post post) {
+    public Post createPost(@RequestBody Post post) {
         return postService.create(post);
     }
 
     @PutMapping
-    public Post update(@RequestBody Post post) {
+    public Post updatePost(@RequestBody Post post) {
         return postService.update(post);
     }
 }

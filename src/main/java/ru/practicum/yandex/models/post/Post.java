@@ -2,11 +2,13 @@ package ru.practicum.yandex.models.post;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
+@FieldDefaults(makeFinal = true)
 public class Post {
     Long id;
     Long authorId;

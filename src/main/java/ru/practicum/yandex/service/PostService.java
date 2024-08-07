@@ -1,6 +1,7 @@
 package ru.practicum.yandex.service;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import ru.practicum.yandex.exceptions.ConditionsNotMetException;
 import ru.practicum.yandex.exceptions.NotFoundException;
 import ru.practicum.yandex.models.post.Post;
@@ -10,9 +11,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-@Repository
+@Service
 public class PostService {
     private final Map<Long, Post> posts = new HashMap<>();
+    private final UserService userService;
+
+    @Autowired
+    public PostService(UserService userService) {
+        this.userService = userService;
+    }
 
     public Collection<Post> findAll() {
         return posts.values();
@@ -20,33 +27,48 @@ public class PostService {
 
     public Post create(Post post) {
         // проверяем выполнение необходимых условий
+        checkDescriptionNotBlank(post);
+        //проверяем, что автор поста существует в репозитории
+        checkAuthorOfPostExistAsUser(post);
+
+        Post newPost = post.toBuilder()
+                .id(getNextId())
+                .postDate(Instant.now())
+                .build();
+        // сохраняем новую публикацию в памяти приложения
+        posts.put(newPost.getId(), newPost);
+        return newPost;
+    }
+
+    private void checkAuthorOfPostExistAsUser(Post post) {
+        Long authorId = post.getAuthorId();
+        if (userService.getUser(authorId).isEmpty()) {
+            throw new ConditionsNotMetException("Автор с ID = " + authorId + " не найден");
+        }
+    }
+
+    private static void checkDescriptionNotBlank(Post post) {
         if (post.getDescription() == null || post.getDescription().isBlank()) {
             throw new ConditionsNotMetException("Описание не может быть пустым");
         }
-        // формируем дополнительные данные
-        post.setId(getNextId());
-        post.setPostDate(Instant.now());
-        // сохраняем новую публикацию в памяти приложения
-        posts.put(post.getId(), post);
-        return post;
     }
 
-    public Post update(Post newPost) {
-        // проверяем необходимые условия
-        if (newPost.getId() == null) {
-            throw new ConditionsNotMetException("Id должен быть указан");
-        }
-        if (!posts.containsKey(newPost.getId())) {
-            throw new NotFoundException("Пост с id = " + newPost.getId() + " не найден");
+    public Post update(Post post) {
+        checkDescriptionNotBlank(post);
+
+        if (post.getId() == null) {
+            throw new ConditionsNotMetException("ID должен быть указан");
         }
 
-        Post oldPost = posts.get(newPost.getId());
-        if (newPost.getDescription() == null || newPost.getDescription().isBlank()) {
-            throw new ConditionsNotMetException("Описание не может быть пустым");
+        if (!posts.containsKey(post.getId())) {
+            throw new NotFoundException("Пост с ID = " + post.getId() + " не найден");
         }
-        // если публикация найдена и все условия соблюдены, обновляем её содержимое
-        oldPost.setDescription(newPost.getDescription());
-        return oldPost;
+
+        Post updatedPost = post.toBuilder()
+                .description(post.getDescription())
+                .build();
+        posts.put(post.getId(), updatedPost);
+        return updatedPost;
     }
 
     private long getNextId() {
