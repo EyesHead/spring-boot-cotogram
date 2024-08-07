@@ -1,7 +1,6 @@
 package ru.practicum.yandex.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 import ru.practicum.yandex.exceptions.ConditionsNotMetException;
 import ru.practicum.yandex.exceptions.DuplicatedDataException;
 import ru.practicum.yandex.exceptions.NotFoundException;
@@ -9,12 +8,13 @@ import ru.practicum.yandex.models.user.User;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class UserService {
-    Map<Long, User> users;
+    Map<Long, User> users = new HashMap<>();
 
     public Collection<User> getAll() {
         return users.values();
@@ -22,32 +22,39 @@ public class UserService {
 
     public User create(User user) {
         User newUser = user.toBuilder().id(getNextId()).registrationDate(Instant.now()).build();
-        validateOnPOST(newUser);
+
+        checkRequiredFieldForNull(newUser);
+        checkEmailAlreadyUsed(newUser);
+
         users.put(newUser.getId(), newUser);
         return newUser;
     }
 
-    public User update(@RequestBody User user) {
-        if (isRequestUserValid(user)) return user;
-        validateOnPUT(user);
-
-        User newUser = user.toBuilder()
-                .id(user.getId())
-                .registrationDate(Instant.now())
+    public User update(User user) {
+        try {
+            checkRequiredFieldForNull(user);
+        } catch (ConditionsNotMetException e) {
+            return user;
+        }
+        checkUserExistInMemory(user);
+        checkEmailAlreadyUsed(user);
+        //Создаем пользователя на основе старых данных и обновляем данные
+        User newUser = users.get(user.getId()).toBuilder()
                 .email(user.getEmail())
                 .password(user.getPassword())
                 .build();
-        users.put(newUser.getId(), newUser);
-        return newUser;
+        users.put(user.getId(), newUser);
+        return user;
+    }
+
+    private void checkRequiredFieldForNull(User user) {
+        if (user.getEmail() == null || user.getPassword() == null) {
+            throw new ConditionsNotMetException("Required user data cant be null");
+        }
     }
 
     public Optional<User> getUser(Long userId) {
         return Optional.ofNullable(users.get(userId));
-    }
-
-    private static boolean isRequestUserValid(User updatedUser) {
-        return updatedUser.getUsername() == null || updatedUser.getEmail() == null
-                || updatedUser.getPassword() == null;
     }
 
     private void checkEmailAlreadyUsed(User user) {
@@ -63,21 +70,10 @@ public class UserService {
                 });
     }
 
-    public void validateOnPUT(User updateUser) {
-        if (!users.containsKey(updateUser.getId())) {
+    public void checkUserExistInMemory(User user) {
+        if (!users.containsKey(user.getId())) {
             throw new NotFoundException("Пользователь с указанным id не найден в системе");
         }
-        if (updateUser.getId() == null) {
-            throw new ConditionsNotMetException("Id должен быть указан");
-        }
-        checkEmailAlreadyUsed(updateUser);
-    }
-
-    private void validateOnPOST(User newUser) {
-        if (newUser.getEmail().isBlank()) {
-            throw new ConditionsNotMetException("Имейл должен быть указан");
-        }
-        checkEmailAlreadyUsed(newUser);
     }
 
     private long getNextId() {
