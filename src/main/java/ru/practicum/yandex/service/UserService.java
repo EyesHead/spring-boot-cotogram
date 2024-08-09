@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.yandex.exceptions.ConditionsNotMetException;
 import ru.practicum.yandex.exceptions.DuplicatedDataException;
 import ru.practicum.yandex.exceptions.NotFoundException;
-import ru.practicum.yandex.models.user.User;
+import ru.practicum.yandex.models.User;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -20,7 +20,11 @@ public class UserService {
         return users.values();
     }
 
-    public User create(User user) {
+    public Optional<User> getUser(Long userId) throws ConditionsNotMetException {
+        return Optional.ofNullable(users.get(userId));
+    }
+
+    public User create(User user) throws ConditionsNotMetException, DuplicatedDataException {
         User newUser = user.toBuilder().id(getNextId()).registrationDate(Instant.now()).build();
 
         checkRequiredFieldForNull(newUser);
@@ -30,13 +34,13 @@ public class UserService {
         return newUser;
     }
 
-    public User update(User user) {
+    public User update(User user) throws DuplicatedDataException, NotFoundException {
         try {
             checkRequiredFieldForNull(user);
         } catch (ConditionsNotMetException e) {
             return user;
         }
-        checkUserExistInMemory(user);
+        checkUserExistInMemory(user.getId());
         checkEmailAlreadyUsed(user);
         //Создаем пользователя на основе старых данных и обновляем данные
         User newUser = users.get(user.getId()).toBuilder()
@@ -47,32 +51,30 @@ public class UserService {
         return user;
     }
 
-    private void checkRequiredFieldForNull(User user) {
-        if (user.getEmail() == null || user.getPassword() == null) {
-            throw new ConditionsNotMetException("Required user data cant be null");
+    private void checkRequiredFieldForNull(User user) throws ConditionsNotMetException {
+        if (user.getEmail() == null) {
+            throw new ConditionsNotMetException("Email is required");
+        } else if (user.getPassword() == null) {
+            throw new ConditionsNotMetException("Password is required");
         }
     }
 
-    public Optional<User> getUser(Long userId) {
-        return Optional.ofNullable(users.get(userId));
-    }
-
-    private void checkEmailAlreadyUsed(User user) {
+    private void checkEmailAlreadyUsed(User user) throws DuplicatedDataException {
         if (users.isEmpty()) return;
 
         users.values().stream()
-                .filter(streamUser -> !streamUser.getId().equals(user.getId())
-                        && streamUser.getEmail().equalsIgnoreCase(user.getEmail()))
-                .filter(userStream -> userStream.getEmail().equalsIgnoreCase(user.getEmail()))
+                .filter(userStream -> //поиск пользователя по полям id и email в репозитории
+                        !userStream.getId().equals(user.getId())
+                        && userStream.getEmail().equalsIgnoreCase(user.getEmail()))
                 .findAny()
                 .ifPresent(streamUser -> {
-                    throw new DuplicatedDataException("Этот имейл уже используется");
+                    throw new DuplicatedDataException("Email {" + streamUser.getEmail() + "} already used");
                 });
     }
 
-    public void checkUserExistInMemory(User user) {
-        if (!users.containsKey(user.getId())) {
-            throw new NotFoundException("Пользователь с указанным id не найден в системе");
+    public void checkUserExistInMemory(Long userId) throws NotFoundException {
+        if (!users.containsKey(userId)) {
+            throw new NotFoundException("User with ID= " + userId + " was not found");
         }
     }
 

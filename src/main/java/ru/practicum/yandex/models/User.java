@@ -1,4 +1,4 @@
-package ru.practicum.yandex.models.post;
+package ru.practicum.yandex.models;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,9 +9,10 @@ import java.time.Instant;
 @Data
 @Builder(toBuilder = true)
 @FieldDefaults(makeFinal = true)
-public class Post {
+public class User {
     Long id;
-    Long authorId;
-    String description;
-    Instant postDate;
+    String username;
+    String email;
+    String password;
+    Instant registrationDate;
 }
