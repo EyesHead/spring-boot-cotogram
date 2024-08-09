@@ -1,6 +1,9 @@
 package ru.practicum.yandex.contoller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.yandex.models.Post;
 import ru.practicum.yandex.service.PostService;
@@ -14,12 +17,11 @@ import java.util.Optional;
 public class PostController {
     private final PostService postService;
 
-    @GetMapping
-    public List<Post> getPosts(
-            @RequestParam(required = false, defaultValue = "asc") String sort,
-            @RequestParam Optional<Integer> from,
-            @RequestParam(required = false, defaultValue = "10") Integer size)
-    {
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public List<Post> getPosts(@RequestParam(required = false, defaultValue = "asc") String sort,
+                               @RequestParam Optional<Integer> from,
+                               @RequestParam(required = false, defaultValue = "10") Integer size) {
         return postService.findPosts(sort, from, size);
     }
 
@@ -29,8 +31,10 @@ public class PostController {
     }
 
     @PostMapping
-    public Post createPost(@RequestBody Post post) {
-        return postService.create(post);
+    public ResponseEntity<Post> createPost(@RequestBody Post post) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(postService.create(post ));
     }
 
     @PutMapping
