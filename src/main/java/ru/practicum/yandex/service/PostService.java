@@ -1,16 +1,16 @@
 package ru.practicum.yandex.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.yandex.exceptions.ConditionsNotMetException;
 import ru.practicum.yandex.exceptions.NotFoundException;
-import ru.practicum.yandex.models.post.Post;
+import ru.practicum.yandex.models.Post;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+@Slf4j
 @Service
 public class PostService {
     private final Map<Long, Post> posts = new HashMap<>();
@@ -33,8 +33,32 @@ public class PostService {
         return createdPost;
     }
 
-    public final Collection<Post> findAll() {
-        return posts.values();
+    public final List<Post> findPosts(String sort, Optional<Integer> from, Integer size) {
+        SortOrder sortOrder = SortOrder.from(sort)
+                .orElseThrow(() -> new ConditionsNotMetException("Sort order = " + sort + " is not supported"));
+
+        // Сортируем посты в зависимости от sortOrder
+        List<Post> sortedPosts = posts.values().stream()
+                .sorted(sortOrder == SortOrder.ASCENDING
+                        ? Comparator.comparing(Post::getPostDate)
+                        : Comparator.comparing(Post::getPostDate).reversed())
+                .toList();
+
+        // Определяем значение по умолчанию для пропуска постов
+        int startIndex = from.orElseGet(() -> Math.max(0, sortedPosts.size() - size));
+
+        return sortedPosts.stream()
+                .skip(startIndex)
+                .limit(size)
+                .toList();
+    }
+
+    public final Post findById(Long postId) throws ConditionsNotMetException {
+        Post post = posts.get(postId);
+        if (post == null) {
+            throw new ConditionsNotMetException("Post with ID=" + postId + " doesn't exist");
+        }
+        return post;
     }
 
     public final Post update(Post post) throws ConditionsNotMetException, NotFoundException {
@@ -49,35 +73,26 @@ public class PostService {
 
     private void checkForCreate(Post post) {
         // проверяем выполнение необходимых условий
-        checkDescriptionNotBlank(post);
+        if (post.getDescription() == null || post.getDescription().isBlank()) {
+            throw new ConditionsNotMetException("Description is required");
+        }
         //проверяем, что автор поста существует в репозитории
-        checkAuthorOfPostExistAsUser(post);
+        userService.checkUserExistInMemory(post.getAuthorId());
     }
 
     private void checkForUpdate(Post post) throws ConditionsNotMetException, NotFoundException {
-        // проверяем выполнение необходимых условий
-        checkDescriptionNotBlank(post);
-        if (post.getId() == null) {
-            throw new ConditionsNotMetException("ID должно быть указано для обновления");
-        }
-        //проверяем, что автор поста существует в репозитории
-        checkAuthorOfPostExistAsUser(post);
-
         if (!posts.containsKey(post.getId())) {
-            throw new NotFoundException("Пост с ID = " + post.getId() + " не найден");
+            throw new NotFoundException("Post with ID = " + post.getId() + " doesn't exist");
         }
-    }
 
-    private void checkAuthorOfPostExistAsUser(Post post) throws ConditionsNotMetException {
-        Long authorId = post.getAuthorId();
-        if (userService.getUser(authorId).isEmpty()) {
-            throw new NotFoundException("Автор с ID = " + authorId + " не найден");
-        }
-    }
+        userService.checkUserExistInMemory(post.getAuthorId());
 
-    private static void checkDescriptionNotBlank(Post post) throws ConditionsNotMetException {
         if (post.getDescription() == null || post.getDescription().isBlank()) {
-            throw new ConditionsNotMetException("Описание не может быть пустым");
+            throw new ConditionsNotMetException("Description is required");
+        }
+
+        if (post.getId() == null) {
+            throw new ConditionsNotMetException("ID is required");
         }
     }
 
