@@ -7,10 +7,8 @@ import lombok.experimental.FieldDefaults;
 
 @Data
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-@Builder
-public class Image {
-    Long id;
-    long postId;
-    String originalFileName;
-    String filePath;
+@Builder(toBuilder = true)
+public class ImageData {
+    byte[] imageBytes;
+    String name;
 }

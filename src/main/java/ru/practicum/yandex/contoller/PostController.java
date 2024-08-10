@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.yandex.exceptions.ConditionsNotMetException;
 import ru.practicum.yandex.models.Post;
 import ru.practicum.yandex.service.PostService;
 
@@ -27,7 +28,8 @@ public class PostController {
 
     @GetMapping("/{id}")
     public Post getPost(@PathVariable Long id) {
-        return postService.findById(id);
+        return postService.findById(id).orElseThrow(() ->
+                new ConditionsNotMetException(String.format("Post with ID=%s was not found in service", id)));
     }
 
     @PostMapping

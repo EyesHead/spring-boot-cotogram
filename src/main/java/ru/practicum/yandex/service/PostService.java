@@ -53,12 +53,8 @@ public class PostService {
                 .toList();
     }
 
-    public final Post findById(Long postId) throws ConditionsNotMetException {
-        Post post = posts.get(postId);
-        if (post == null) {
-            throw new ConditionsNotMetException("Post with ID=" + postId + " doesn't exist");
-        }
-        return post;
+    public final Optional<Post> findById(Long postId) {
+        return Optional.ofNullable(posts.get(postId));
     }
 
     public final Post update(Post post) throws ConditionsNotMetException, NotFoundException {
