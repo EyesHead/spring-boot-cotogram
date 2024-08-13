@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import ru.practicum.yandex.exceptions.ConditionsNotMetException;
 import ru.practicum.yandex.exceptions.ImageFileIOException;
 import ru.practicum.yandex.exceptions.NotFoundException;
 import ru.practicum.yandex.models.Image;
@@ -31,7 +30,7 @@ public class ImageService {
     private final Map<Long, Image> images = new HashMap<>();
 
     // директория для хранения изображений
-    @Value("${catsgram.image-directory}")
+    @Value("${catsgram.image.directory}")
     private String imageDirectory;
 
     // сохранение списка изображений, связанных с указанным постом
@@ -59,23 +58,20 @@ public class ImageService {
 
         if (!Files.exists(path)) {
             throw new ImageFileIOException(
-                    String.format("Image doesn't exist on server: name=%s", image.getOriginalFileName()));
+                    String.format("Картинка не создана. Название файла {%s}", image.getOriginalFileName()));
         }
 
         try {
             return Files.readAllBytes(path);
         } catch (IOException e) {
             throw new ImageFileIOException(
-                    String.format("Error while reading file with path=%s", path));
+                    String.format("Возникла ошибка во время чтения файла {%s}", image.getOriginalFileName()));
         }
     }
 
     // сохранение отдельного изображения, связанного с указанным постом
     private Image saveImage(long postId, MultipartFile file) {
-        Post post = postService.findById(postId)
-            .orElseThrow(() ->
-                new ConditionsNotMetException(String.format("Post with ID=%s was not found", postId)));
-
+        Post post = postService.findById(postId);
         // сохраняем изображение на диск и возвращаем путь к файлу
         Path filePath = saveFile(file, post);
 

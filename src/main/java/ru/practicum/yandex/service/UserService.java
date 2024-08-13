@@ -27,7 +27,8 @@ public class UserService {
     public User create(User user) throws ConditionsNotMetException, DuplicatedDataException {
         User newUser = user.toBuilder().id(getNextId()).registrationDate(Instant.now()).build();
 
-        checkRequiredFieldForNull(newUser);
+        checkEmailNotNull(user.getEmail());
+        checkPasswordNotNull(user.getPassword());
         checkEmailAlreadyUsed(newUser);
 
         users.put(newUser.getId(), newUser);
@@ -36,11 +37,12 @@ public class UserService {
 
     public User update(User user) throws DuplicatedDataException, NotFoundException {
         try {
-            checkRequiredFieldForNull(user);
+            checkEmailNotNull(user.getEmail());
+            checkPasswordNotNull(user.getPassword());
         } catch (ConditionsNotMetException e) {
             return user;
         }
-        checkUserExistInMemory(user.getId());
+        checkIsUserExistInMemory(user.getId());
         checkEmailAlreadyUsed(user);
         //Создаем пользователя на основе старых данных и обновляем данные
         User newUser = users.get(user.getId()).toBuilder()
@@ -51,11 +53,15 @@ public class UserService {
         return user;
     }
 
-    private void checkRequiredFieldForNull(User user) throws ConditionsNotMetException {
-        if (user.getEmail() == null) {
-            throw new ConditionsNotMetException("Email is required");
-        } else if (user.getPassword() == null) {
+    private static void checkPasswordNotNull(String password) {
+        if (password == null) {
             throw new ConditionsNotMetException("Password is required");
+        }
+    }
+
+    private static void checkEmailNotNull(String email) {
+        if (email == null) {
+            throw new ConditionsNotMetException("Email is required");
         }
     }
 
@@ -72,7 +78,7 @@ public class UserService {
                 });
     }
 
-    public void checkUserExistInMemory(Long userId) throws NotFoundException {
+    public void checkIsUserExistInMemory(Long userId) throws NotFoundException {
         if (!users.containsKey(userId)) {
             throw new NotFoundException("User with ID= " + userId + " was not found");
         }
