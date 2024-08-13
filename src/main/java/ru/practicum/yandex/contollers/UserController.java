@@ -1,4 +1,4 @@
-package ru.practicum.yandex.contoller;
+package ru.practicum.yandex.contollers;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

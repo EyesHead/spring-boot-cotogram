@@ -1,4 +1,4 @@
-package ru.practicum.yandex.contoller;
+package ru.practicum.yandex.contollers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
